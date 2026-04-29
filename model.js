@@ -489,18 +489,29 @@ function analyzeContent(rawText, sourceType = 'text') {
 
   if (informationalContent) {
     label = 'INFORMATIONAL / NON-NEWS';
-  } else if (hasImpossibility || fakeProbability >= 0.72 || (strongFakeSignals && fakeProbability >= 0.62)) {
+  } else if (hasImpossibility || fakeProbability >= 0.65 || (strongFakeSignals && fakeProbability >= 0.58)) {
+    // Stricter fake detection: keep impossible claims and unrealistic high-confidence fake scores
     label = 'FAKE NEWS';
-  } else if (hasWeakEvidence && hasClaimCue && fakeProbability >= 0.60) {
+  } else if (hasWeakEvidence && hasClaimCue && fakeProbability >= 0.55) {
     label = 'FAKE NEWS';
-  } else if (hasUnrealisticClaim && fakeProbability >= 0.64) {
+  } else if (hasUnrealisticClaim && fakeProbability >= 0.60) {
     label = 'FAKE NEWS';
   } else if (strongRealSignals) {
     label = 'REAL';
-  } else if (fakeProbability <= 0.34 && !hasWeakEvidence && !hasClaimCue) {
+  } else if (fakeProbability <= 0.40) {
+    // Default to REAL for low fake probability when no strong fake signals
+    label = 'REAL';
+  } else if (fakeProbability >= 0.40 && fakeProbability <= 0.60 && !strongFakeSignals && !hasAbsolutistTone && !hasSensationalLanguage) {
+    // Bias REAL for middle-range probabilities with no red flags
     label = 'REAL';
   } else if (hasSatireCue && !isCredibleDomain) {
-    label = fakeProbability >= 0.52 ? 'FAKE NEWS' : 'UNCERTAIN';
+    label = fakeProbability >= 0.52 ? 'FAKE NEWS' : 'REAL';
+  } else if (fakeProbability >= 0.60) {
+    // High fake probability with some signals = FAKE
+    label = 'FAKE NEWS';
+  } else {
+    // Remaining middle ground: bias REAL if no strong fake signals
+    label = !strongFakeSignals ? 'REAL' : 'UNCERTAIN';
   }
 
   const confidence =
