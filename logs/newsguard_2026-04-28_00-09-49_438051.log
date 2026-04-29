@@ -1,0 +1,50 @@
+2026-04-28 00:09:49 | INFO     | newsguard_ai.app.main_production:<module>:87 - Environment: production
+2026-04-28 00:09:49 | INFO     | newsguard_ai.app.main_production:<module>:88 - Debug Mode: False
+2026-04-28 00:09:49 | INFO     | newsguard_ai.app.main_production:<module>:89 - Allowed Origins: ['http://localhost:3000', 'http://localhost:8080', 'http://127.0.0.1:5500', 'http://localhost']
+2026-04-28 00:09:49 | INFO     | newsguard_ai.app.main_production:<module>:90 - Trusted Hosts: ['localhost', '127.0.0.1']
+2026-04-28 00:09:51 | INFO     | newsguard_ai.app.services.nlp_service:__init__:10 - NLPService initialized
+2026-04-28 00:09:51 | INFO     | newsguard_ai.ml.predict_production:_load_or_train_model:201 - ✅ Loaded fake-news model from D:\News_Detection_App\newsguard_ai\ml\saved_model\hybrid_fake_news_model.pkl
+2026-04-28 00:09:51 | INFO     | newsguard_ai.app.main_production:<module>:160 - ✅ Routes imported successfully
+2026-04-28 00:09:51 | INFO     | newsguard_ai.app.main_production:lifespan:63 - ============================================================
+2026-04-28 00:09:51 | INFO     | newsguard_ai.app.main_production:lifespan:64 - 🚀 NewsGuard AI - Starting Production Server
+2026-04-28 00:09:51 | INFO     | newsguard_ai.app.main_production:lifespan:65 - ============================================================
+2026-04-28 00:10:36 | INFO     | newsguard_ai.app.main_production:dispatch:46 - [2c5f8f1a-4b94-40da-be19-0a7a17b6d1d6] POST /api/analyze
+2026-04-28 00:10:36 | INFO     | newsguard_ai.app.routes.analyze_production:analyze_content:155 - [2743300197487569175] Analysis request received: type=text, content_len=82, content_preview='Shocking secret technology lets people read minds instantly using quantum signal'
+2026-04-28 00:10:36 | INFO     | newsguard_ai.app.routes.analyze_production:analyze_content:224 - [2743300197487569175] Content ready for prediction: chars=82, words=11
+2026-04-28 00:10:36 | INFO     | newsguard_ai.ml.predict_production:predict:380 - HYBRID PREDICT => class=%s fake=%.1f real=%.1f conf=%.1f mode=%s
+2026-04-28 00:10:36 | INFO     | newsguard_ai.app.routes.analyze_production:analyze_content:250 - [2743300197487569175] Prediction result: class=FAKE, real=8.0%, fake=92.0%, conf=96.0%
+2026-04-28 00:10:36 | INFO     | newsguard_ai.app.services.nlp_service:analyze_sentiment:44 - Sentiment analysis: NEGATIVE (polarity: -0.467, confidence: 46.7%)
+2026-04-28 00:10:36 | INFO     | newsguard_ai.app.routes.analyze_production:analyze_content:282 - [2743300197487569175] Analysis complete: classification=FAKE
+2026-04-28 00:10:36 | INFO     | newsguard_ai.app.main_production:dispatch:51 - [2c5f8f1a-4b94-40da-be19-0a7a17b6d1d6] Status: 200 | Time: 0.07s
+2026-04-28 00:12:04 | INFO     | newsguard_ai.app.main_production:dispatch:46 - [8bb21b3f-6428-4066-9d1f-8ca3c06edf6f] GET /
+2026-04-28 00:12:04 | INFO     | newsguard_ai.app.main_production:root:137 - Root endpoint accessed
+2026-04-28 00:12:04 | INFO     | newsguard_ai.app.main_production:dispatch:51 - [8bb21b3f-6428-4066-9d1f-8ca3c06edf6f] Status: 200 | Time: 0.00s
+2026-04-28 00:12:04 | INFO     | newsguard_ai.app.main_production:dispatch:46 - [0fcfca0c-173c-4575-84da-ab3fb675fa59] GET /favicon.ico
+2026-04-28 00:12:04 | INFO     | newsguard_ai.app.main_production:dispatch:51 - [0fcfca0c-173c-4575-84da-ab3fb675fa59] Status: 404 | Time: 0.00s
+2026-04-28 00:12:15 | INFO     | newsguard_ai.app.main_production:dispatch:46 - [10871745-51da-4f54-a6a4-bba9dd03dc73] GET /
+2026-04-28 00:12:15 | INFO     | newsguard_ai.app.main_production:root:137 - Root endpoint accessed
+2026-04-28 00:12:15 | INFO     | newsguard_ai.app.main_production:dispatch:51 - [10871745-51da-4f54-a6a4-bba9dd03dc73] Status: 200 | Time: 0.00s
+2026-04-28 00:26:13 | INFO     | newsguard_ai.app.main_production:dispatch:46 - [51bf3bd2-2479-4488-8596-63f61bd75fb2] GET /health
+2026-04-28 00:26:13 | INFO     | newsguard_ai.app.main_production:dispatch:51 - [51bf3bd2-2479-4488-8596-63f61bd75fb2] Status: 200 | Time: 0.00s
+2026-04-28 00:26:14 | INFO     | newsguard_ai.app.main_production:dispatch:46 - [33509f62-07ef-4a3d-aeed-e8cea7c0fe73] GET /
+2026-04-28 00:26:14 | INFO     | newsguard_ai.app.main_production:root:137 - Root endpoint accessed
+2026-04-28 00:26:14 | INFO     | newsguard_ai.app.main_production:dispatch:51 - [33509f62-07ef-4a3d-aeed-e8cea7c0fe73] Status: 200 | Time: 0.00s
+2026-04-28 00:26:38 | INFO     | newsguard_ai.app.main_production:dispatch:46 - [8968ecc7-b718-4ef5-a9a1-f7bf3096274e] GET /health
+2026-04-28 00:26:38 | INFO     | newsguard_ai.app.main_production:dispatch:51 - [8968ecc7-b718-4ef5-a9a1-f7bf3096274e] Status: 200 | Time: 0.00s
+2026-04-28 00:26:38 | INFO     | newsguard_ai.app.main_production:dispatch:46 - [47cdeaf8-dd48-4455-9c83-de806020497f] GET /
+2026-04-28 00:26:38 | INFO     | newsguard_ai.app.main_production:root:137 - Root endpoint accessed
+2026-04-28 00:26:38 | INFO     | newsguard_ai.app.main_production:dispatch:51 - [47cdeaf8-dd48-4455-9c83-de806020497f] Status: 200 | Time: 0.00s
+2026-04-28 00:26:38 | INFO     | newsguard_ai.app.main_production:dispatch:46 - [85856891-ded5-4af4-8713-40f2dda27a41] POST /api/analyze
+2026-04-28 00:26:38 | INFO     | newsguard_ai.app.routes.analyze_production:analyze_content:155 - [4003014923180654094] Analysis request received: type=text, content_len=0, content_preview=''
+2026-04-28 00:26:38 | INFO     | newsguard_ai.app.main_production:dispatch:51 - [85856891-ded5-4af4-8713-40f2dda27a41] Status: 200 | Time: 0.00s
+2026-04-28 00:27:09 | INFO     | newsguard_ai.app.main_production:dispatch:46 - [73c1624e-ec97-4d3f-a581-1d907ecaf47f] GET /health
+2026-04-28 00:27:09 | INFO     | newsguard_ai.app.main_production:dispatch:51 - [73c1624e-ec97-4d3f-a581-1d907ecaf47f] Status: 200 | Time: 0.00s
+2026-04-28 00:27:09 | INFO     | newsguard_ai.app.main_production:dispatch:46 - [740902de-452f-435a-ba40-4c61682baa5e] GET /
+2026-04-28 00:27:09 | INFO     | newsguard_ai.app.main_production:root:137 - Root endpoint accessed
+2026-04-28 00:27:09 | INFO     | newsguard_ai.app.main_production:dispatch:51 - [740902de-452f-435a-ba40-4c61682baa5e] Status: 200 | Time: 0.00s
+2026-04-28 00:27:09 | INFO     | newsguard_ai.app.main_production:dispatch:46 - [866e9fc6-692e-45b9-b25d-a2307daacdeb] POST /api/analyze
+2026-04-28 00:27:09 | INFO     | newsguard_ai.app.routes.analyze_production:analyze_content:155 - [4003014923180654094] Analysis request received: type=text, content_len=0, content_preview=''
+2026-04-28 00:27:09 | INFO     | newsguard_ai.app.main_production:dispatch:51 - [866e9fc6-692e-45b9-b25d-a2307daacdeb] Status: 200 | Time: 0.00s
+2026-04-28 00:27:09 | INFO     | newsguard_ai.app.main_production:dispatch:46 - [023fe6bf-5380-4bda-aa3a-5fe0f9f1ddf9] POST /api/analyze
+2026-04-28 00:27:09 | INFO     | newsguard_ai.app.routes.analyze_production:analyze_content:155 - [4003014923180654094] Analysis request received: type=text, content_len=0, content_preview=''
+2026-04-28 00:27:09 | INFO     | newsguard_ai.app.main_production:dispatch:51 - [023fe6bf-5380-4bda-aa3a-5fe0f9f1ddf9] Status: 200 | Time: 0.00s

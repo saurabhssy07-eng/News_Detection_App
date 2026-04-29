@@ -1,0 +1,21 @@
+2026-04-28 00:16:39 | INFO     | newsguard_ai.app.main_production:<module>:87 - Environment: production
+2026-04-28 00:16:39 | INFO     | newsguard_ai.app.main_production:<module>:88 - Debug Mode: False
+2026-04-28 00:16:39 | INFO     | newsguard_ai.app.main_production:<module>:89 - Allowed Origins: ['http://localhost:3000', 'http://localhost:8080', 'http://127.0.0.1:5500', 'http://localhost']
+2026-04-28 00:16:39 | INFO     | newsguard_ai.app.main_production:<module>:90 - Trusted Hosts: ['localhost', '127.0.0.1']
+2026-04-28 00:16:41 | INFO     | newsguard_ai.app.services.nlp_service:__init__:10 - NLPService initialized
+2026-04-28 00:16:41 | INFO     | newsguard_ai.ml.predict_production:_load_or_train_model:201 - ✅ Loaded fake-news model from D:\News_Detection_App\newsguard_ai\ml\saved_model\hybrid_fake_news_model.pkl
+2026-04-28 00:16:41 | INFO     | newsguard_ai.app.main_production:<module>:160 - ✅ Routes imported successfully
+2026-04-28 00:16:41 | INFO     | newsguard_ai.app.main_production:lifespan:63 - ============================================================
+2026-04-28 00:16:41 | INFO     | newsguard_ai.app.main_production:lifespan:64 - 🚀 NewsGuard AI - Starting Production Server
+2026-04-28 00:16:41 | INFO     | newsguard_ai.app.main_production:lifespan:65 - ============================================================
+2026-04-28 00:17:34 | INFO     | newsguard_ai.app.main_production:dispatch:46 - [236afbce-af6f-4c62-99ac-b1a615a69368] POST /api/analyze
+2026-04-28 00:17:34 | INFO     | newsguard_ai.app.routes.analyze_production:analyze_content:164 - [528432071892] analyze request type=text length=71
+2026-04-28 00:17:34 | INFO     | newsguard_ai.ml.predict_production:predict:380 - HYBRID PREDICT => class=%s fake=%.1f real=%.1f conf=%.1f mode=%s
+2026-04-28 00:17:34 | INFO     | newsguard_ai.app.services.nlp_service:analyze_sentiment:44 - Sentiment analysis: NEGATIVE (polarity: -0.400, confidence: 40.0%)
+2026-04-28 00:17:34 | INFO     | newsguard_ai.app.routes.analyze_production:analyze_content:216 - [528432071892] analyze complete class=UNCERTAIN fake=49.7% conf=67.5%
+2026-04-28 00:17:34 | INFO     | newsguard_ai.app.main_production:dispatch:51 - [236afbce-af6f-4c62-99ac-b1a615a69368] Status: 200 | Time: 0.06s
+2026-04-28 00:17:34 | INFO     | newsguard_ai.app.main_production:dispatch:46 - [a0f7dd7b-e45c-4d3c-a561-d725a8df158b] POST /api/analyze
+2026-04-28 00:17:34 | INFO     | newsguard_ai.app.routes.analyze_production:analyze_content:164 - [464980919534] analyze request type=url length=30
+2026-04-28 00:17:36 | WARNING  | newsguard_ai.app.services.extractor_service:extract_from_url:68 - URL extraction primary path failed: Article `download()` failed with 404 Client Error: Not Found for url: https://example.com/news-story on URL https://example.com/news-story; trying raw fetch fallback
+2026-04-28 00:17:37 | ERROR    | newsguard_ai.app.services.extractor_service:extract_from_url:108 - URL extraction fallback error: 404 Client Error: Not Found for url: https://example.com/news-story
+2026-04-28 00:17:37 | INFO     | newsguard_ai.app.main_production:dispatch:51 - [a0f7dd7b-e45c-4d3c-a561-d725a8df158b] Status: 200 | Time: 2.84s

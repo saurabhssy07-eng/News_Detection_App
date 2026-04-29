@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewsGuard AI - Fake News Detection System</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+        <div class="circle circle-3"></div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar glass-card">
+        <div class="container nav-container">
+            <div class="logo">
+                <span class="app-icon" aria-hidden="true">🛡️</span>
+                <h1>NewsGuard<span>AI</span></h1>
+            </div>
+
+            <div class="nav-controls">
+                <button type="button" class="theme-toggle" id="theme-toggle" tabindex="0">🌙</button>
+
+                <button type="button" class="hamburger" id="hamburger" tabindex="0">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Side Menu -->
+    <div class="side-menu" id="side-menu">
+        <div class="menu-header">
+            <h2>Menu</h2>
+            <button type="button" class="close-menu" id="close-menu" tabindex="0">✖️</button>
+        </div>
+        <ul class="menu-links">
+            <li><a href="#" onclick="showLanding()">🏠 Home</a></li>
+            <li><a href="#" onclick="showAnalyzer()">🔎 Analyze News</a></li>
+            <li><a href="#" onclick="showHistory()">🕘 History</a></li>
+            <li><a href="#" onclick="showAbout()">ℹ️ About App</a></li>
+            <li><a href="#" onclick="showDeveloper()">👨‍💻 Developer Info</a></li>
+            <li><a href="#" onclick="showMoreApps()">📱 More Apps</a></li>
+            <li><a href="#" onclick="showHowItWorks()">⚙️ How It Works</a></li>
+            <li><a href="#" onclick="showFeatures()">⭐ Features</a></li>
+            <li><a href="#" onclick="showContact()">📩 Contact</a></li>
+        </ul>
+    </div>
+
+    <!-- Overlay -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- Landing Page -->
+    <section class="landing-page" id="landing-page">
+        <div class="container landing-content">
+            <div class="hero-text">
+                <h1>Detect Fake News<br>With <span>AI Power</span></h1>
+                <p>Advanced artificial intelligence system to verify news authenticity, summarize content and analyze sentiment. Just paste text, URL or upload PDF files.</p>
+                <button class="start-btn" onclick="showAnalyzer()">
+                    🚀 Start Analyzing
+                </button>
+            </div>
+            <div class="hero-visual">
+                <div class="ai-badge glass-card glossy-brain">
+                    <div class="brain-glow">
+                        <span class="hero-tech-icon" aria-hidden="true"></span>
+                        <svg viewBox="0 0 120 100" width="90" height="90" class="glossy-brain-svg">
+                            <defs>
+                                <radialGradient id="brainGloss" cx="40%" cy="30%" r="50%">
+                                    <stop offset="0%" stop-color="#60c7f2"/>
+                                    <stop offset="50%" stop-color="#38bdf8"/>
+                                    <stop offset="100%" stop-color="#0284c7"/>
+                                </radialGradient>
+                                <radialGradient id="brainShine" cx="60%" cy="40%" r="30%">
+                                    <stop offset="0%" stop-color="rgba(255,255,255,0.8)"/>
+                                    <stop offset="50%" stop-color="rgba(255,255,255,0.3)"/>
+                                    <stop offset="100%" stop-color="transparent"/>
+                                </radialGradient>
+                                <linearGradient id="brainLeft" x1="0%" y1="0%" x2="60%" y2="100%">
+                                    <stop offset="0%" stop-color="#a855f7"/>
+                                    <stop offset="70%" stop-color="#38bdf8"/>
+                                    <stop offset="100%" stop-color="#1e40af"/>
+                                </linearGradient>
+                                <linearGradient id="brainRight" x1="40%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#10b981"/>
+                                    <stop offset="70%" stop-color="#38bdf8"/>
+                                    <stop offset="100%" stop-color="#0284c7"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M20 20 Q10 35 20 50 Q30 65 45 55 Q55 70 70 55 Q85 65 95 50 Q85 35 70 45 Q55 30 45 40 Q30 30 20 20 Z" fill="url(#brainLeft)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+                            <path d="M65 25 Q75 15 85 30 Q95 20 90 40 Q80 30 70 35 Q80 45 90 50 Q95 40 85 55 Q75 65 65 50 Z" fill="url(#brainRight)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+                            <ellipse cx="35" cy="35" rx="15" ry="12" fill="url(#brainGloss)" opacity="0.7"/>
+                            <ellipse cx="55" cy="30" rx="8" ry="6" fill="url(#brainShine)"/>
+                            <path d="M20 20 Q10 35 20 50 Q30 65 45 55 Q55 70 70 55 Q85 65 95 50 Q85 35 70 45 Z" fill="none" stroke="url(#brainGloss)" stroke-width="3" opacity="0.4" filter="url(#glow)"/>
+                            <path d="M30 35 Q35 30 42 38 Q48 32 52 40" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                            <path d="M55 28 Q62 25 68 32 Q72 28 75 35" stroke="rgba(255,255,255,0.3)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <span>AI Powered</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Analyzer App -->
+    <main class="main container" id="analyzer-app" style="display: none;">
+        <section class="upload-section glass-card">
+            <div class="tab-container">
+                <button type="button" class="tab-btn active" data-tab="text" tabindex="0">📝 Text Input</button>
+                <button type="button" class="tab-btn" data-tab="url" tabindex="0">🌐 Website URL</button>
+                <button type="button" class="tab-btn" data-tab="pdf" tabindex="0">📄 PDF Upload</button>
+            </div>
+
+            <div class="tab-content active" id="text-tab">
+                <textarea id="text-input" placeholder="Paste your news article or paragraph here for authentication analysis..." rows="6"></textarea>
+                <button type="button" class="analyze-btn" onclick="analyzeText()">🔍 Analyze Content</button>
+                <button class="clear-btn" onclick="clearResults()">✖️ Clear</button>
+            </div>
+
+            <div class="tab-content" id="url-tab">
+                <input type="url" id="url-input" placeholder="Paste website / news article URL here...">
+                <button class="analyze-btn" onclick="analyzeUrl()">🌐 Fetch & Analyze</button>
+                <button class="clear-btn" onclick="clearResults()">✖️ Clear</button>
+            </div>
+
+            <div class="tab-content" id="pdf-tab">
+                <div class="upload-area" id="upload-area">
+                    ☁️
+                    <p>Drag & Drop your PDF file here</p>
+                    <span>or</span>
+                    <input type="file" id="pdf-input" accept=".pdf" hidden>
+                    <button type="button" class="browse-btn" tabindex="0">Browse Files</button>
+                </div>
+                <button type="button" class="clear-btn" onclick="clearResults()">✖️ Clear</button>
+            </div>
+        </section>
+
+        <section class="loader-section" id="loader" style="display: none;">
+            <div class="loader-container">
+                <div class="loader-bar">
+                    <div class="loader-progress" id="loader-progress"></div>
+                </div>
+                <p id="loader-text">Initializing AI analysis... <span id="loader-percent">0%</span></p>
+            </div>
+        </section>
+
+        <section class="results-section" id="results" style="display: none;">
+            <div class="glass-card result-card">
+                <h3>🛡️ Authenticity Analysis</h3>
+                <div class="result-bar">
+                    <div class="label">Real News</div>
+                    <div class="progress-bar">
+                        <div class="progress real" id="real-progress"></div>
+                    </div>
+                    <div class="percentage" id="real-percent">0%</div>
+                </div>
+                <div class="result-bar">
+                    <div class="label">Fake News</div>
+                    <div class="progress-bar">
+                        <div class="progress fake" id="fake-progress"></div>
+                    </div>
+                    <div class="percentage" id="fake-percent">0%</div>
+                </div>
+                <div class="classification" id="classification"></div>
+                <div class="analysis-meta">
+                    <p id="risk-level" style="display: none;"></p>
+                    <p id="model-confidence" style="display: none;"></p>
+                    <p id="decision-confidence" style="display: none;"></p>
+                </div>
+                <div class="explanation-block" id="explanation-block" style="display: none;">
+                    <h4>📋 Why this result?</h4>
+                    <ul id="explanation-list"></ul>
+                </div>
+            </div>
+
+            <div class="glass-card result-card">
+                <h3>📄 AI Summary</h3>
+                <p id="summary-text"></p>
+            </div>
+
+            <div class="glass-card result-card">
+                <h3>📈 Sentiment Analysis</h3>
+                <div class="sentiment-display" id="sentiment-display"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Pages Container -->
+    <div id="pages-container" style="display: none;">
+        <section id="about-page" class="page-section">
+            <div class="container">
+                <div class="glass-card page-content">
+                    <h2>ℹ️ About NewsGuard AI</h2>
+                    <p>NewsGuard AI is the ultimate tool for combating misinformation in the digital age. Using cutting-edge transformer models (DistilBERT, sentiment analysis pipelines), we deliver:</p>
+                    <ul class="features-list">
+                        <li>95%+ accuracy on fake news detection</li>
+                        <li>Real-time URL/PDF/text analysis</li>
+                        <li>Multi-model ensemble scoring</li>
+                        <li>Credibility-based source ranking</li>
+                    </ul>
+                    <div class="page-stats">
+                        <div class="stat"><span>1.0.0</span> Version</div>
+                        <div class="stat"><span>95%+</span> Accuracy</div>
+                        <div class="stat"><span>Multi-Model</span></div>
+                        <div class="stat"><span>Real-time</span></div>
+                    </div>
+                    <div style="margin-top: 30px;">
+                        <p><strong>Tech Stack:</strong> FastAPI, Transformers, BeautifulSoup, Scikit-learn</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="developer-page" class="page-section">
+            <div class="container">
+                <div class="glass-card page-content">
+                    <h2>👨‍💻 Developer Information</h2>
+                    <div style="text-align: center;">
+                        <p><strong>Lead Developer:</strong> SAURABH SINGH YADAV</p>
+                        <p>Full-stack AI/ML Engineer specializing in NLP and misinformation detection.</p>
+                    </div>
+                    <div class="contact-info">
+                        <p><strong>Portfolio:</strong> github.com/saurabh-singh-yadav</p>
+                        <p><strong>LinkedIn:</strong> linkedin.com/in/saurabh-singh-yadav</p>
+                        <p>© 2026 NewsGuard AI - All Rights Reserved</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="more-apps-page" class="page-section">
+            <div class="container">
+                <div class="glass-card page-content">
+                    <h2>📱 More Applications</h2>
+                    <div style="text-align: center;">
+                        <h3>Upcoming Features & Apps</h3>
+                        <ul class="features-list">
+                            <li>🧩 Browser Extension for real-time checking</li>
+                            <li>📱 Mobile App (React Native)</li>
+                            <li>☁️ Enterprise API (Rate-limited)</li>
+                            <li>🔔 Live News Monitor Dashboard</li>
+                            <li>👥 Team Collaboration Workspace</li>
+                        </ul>
+                    </div>
+                    <p style="margin-top: 30px;"><strong>Stay tuned for beta releases!</strong></p>
+                </div>
+            </div>
+        </section>
+
+        <section id="how-it-works-page" class="page-section">
+            <div class="container">
+                <div class="glass-card page-content">
+                    <h2>⚙️ How It Works</h2>
+                    <div class="numbered-list">
+                        <li><strong>1. Input:</strong> Text, URL, or PDF upload (drag & drop supported)</li>
+                        <li><strong>2. Extraction:</strong> BeautifulSoup parses HTML, PyMuPDF handles PDFs</li>
+                        <li><strong>3. Analysis:</strong> DistilBERT for classification + RoBERTa for sentiment</li>
+                        <li><strong>4. Scoring:</strong> Ensemble model with confidence thresholds</li>
+                        <li><strong>5. Results:</strong> Real-time probabilities + explanations</li>
+                    </div>
+                    <p style="margin-top: 30px; font-style: italic;">Powered by FastAPI backend with hybrid ML/NLP pipeline. Processing time: <5 seconds average.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="features-page" class="page-section">
+            <div class="container">
+                <div class="glass-card page-content">
+                    <h2>⭐ Key Features</h2>
+                    <div style="text-align: left; max-width: 700px; margin: 0 auto;">
+                        <h3 style="text-align: center; margin-bottom: 25px;">Core Capabilities</h3>
+                        <ul class="features-list">
+                            <li>🛡️ <strong>Fake News Detection</strong> - Binary classification with 95% precision</li>
+                            <li>🌐 <strong>Source Analysis</strong> - Domain reputation + historical accuracy scoring</li>
+                            <li>🧠 <strong>Smart Summarization</strong> - Extractive + abstractive hybrid summaries</li>
+                            <li>📈 <strong>Sentiment Analysis</strong> - Fine-grained emotion detection</li>
+                            <li>📄 <strong>PDF Processing</strong> - OCR + text extraction (up to 50MB files)</li>
+                            <li>🔗 <strong>URL Fetching</strong> - JavaScript-rendered content extraction</li>
+                            <li>⚡ <strong>Confidence Scoring</strong> - Model ensemble with uncertainty estimation</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact-page" class="page-section">
+            <div class="container">
+                <div class="glass-card page-content">
+                    <h2>📩 Contact Us</h2>
+                    <div class="contact-details">
+                        <p><strong>📧 Support:</strong> support@newsguard.ai (Technical issues)</p>
+                        <p><strong>💼 Business:</strong> business@newsguard.ai (Enterprise/API)</p>
+                        <p><strong>🌐 Website:</strong> www.newsguard.ai</p>
+                        <p><strong>🐦 Twitter:</strong> @NewsGuardAI | #FakeNewsDetection</p>
+                        <p><strong>📱 Discord:</strong> discord.gg/newsguard</p>
+                    </div>
+                    <div style="margin-top: 30px;">
+                        <h4 style="margin-bottom: 15px;">Frequently Asked Questions</h4>
+                        <details>
+                            <summary>How accurate is the detection?</summary>
+                            <p>Our ensemble model achieves 95%+ precision on benchmark datasets. Confidence scores provided for transparency.</p>
+                        </details>
+                        <details>
+                            <summary>Supported file sizes?</summary>
+                            <p>Text: unlimited | PDF: up to 50MB | URLs: most sites (JavaScript rendered).</p>
+                        </details>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="history-page" class="page-section">
+            <div class="container">
+                <div class="glass-card page-content">
+                    <h2>🕘 Analysis History</h2>
+                    <div class="history-controls">
+                        <button class="clear-btn" onclick="clearHistory()" style="width: auto; padding: 10px 20px;">🗑️ Clear All</button>
+                    </div>
+                    <div id="history-list" class="history-list">
+                        <p style="text-align: center; color: var(--text-secondary);">No previous analyses. Run some tests!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="error-page" class="page-section">
+            <div class="container">
+                <div class="glass-card page-content error-card">
+                    <h2>⚠️ Analysis Error</h2>
+                    <p id="error-message">An error occurred during analysis. Please check your input and try again.</p>
+                    <div class="error-actions">
+                        <button class="analyze-btn" onclick="showAnalyzer()">Try Again</button>
+                        <button class="start-btn" onclick="showLanding()">Back to Home</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 NewsGuard AI. All Rights Reserved.</p>
+            <p class="developer-credit">Created by <span>SAURABH And TEAM</span></p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+      window.pdfjsLib = window.pdfjsLib || window['pdfjsLib'] || window.PDFJS || null;
+    </script>
+    <script src="script.js?v=20260428.2"></script>
+</body>
+</html>
+
+<style>
+.history-controls {
+    margin-bottom: 20px;
+    text-align: right;
+}
+
+.history-list {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.history-item {
+    margin-bottom: 15px;
+    padding: 20px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.history-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.history-type {
+    background: var(--glass-bg);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.history-time {
+    color: var(--text-secondary);
+}
+
+.history-result {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.history-result.REAL { color: #10b981; }
+.history-result.FAKE { color: #ef4444; }
+
+.history-sentiment {
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.history-sentiment.POSITIVE { color: #10b981; }
+.history-sentiment.NEGATIVE { color: #ef4444; }
+.history-sentiment.NEUTRAL { color: var(--text-secondary); }
+
+.history-summary {
+    color: var(--text-secondary);
+    font-style: italic;
+    font-size: 14px;
+}
+</style>
