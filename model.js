@@ -365,7 +365,6 @@ function analyzeContent(rawText, sourceType = 'text') {
   const hasLoudFormatting = signals.includes('loudFormatting');
 
   const questionMarks = countMatches(text, /\?/g);
-  const exclamationMarks = countMatches(text, /!/g);
   const uppercaseRatio = text.length ? (text.match(/[A-Z]/g) || []).length / text.length : 0;
   const hasMisleadingHeadline = /^(breaking|shocking|urgent|you won't believe|what happens next|exclusive)\b/i.test(text) || (hasSensationalLanguage && !hasStrongEvidence);
   const evidenceRegex = /\b(according to|reported|confirmed|published|study|data|official|statement|records|interview|spokesperson|research|report|proof|citation|cites|source|sources)\b/i;
@@ -375,14 +374,11 @@ function analyzeContent(rawText, sourceType = 'text') {
   if (isCredibleDomain) sourceCredibility += 0.42;
   if (sourceType === 'url') sourceCredibility += 0.04;
   if (sourceType === 'pdf') sourceCredibility += 0.02;
-  // stronger boost for structured/formal policy-like evidence
   if (hasStrongEvidence) sourceCredibility += 0.22;
-  // reduce penalty for weak evidence (missing explicit sources)
   if (hasWeakEvidence) sourceCredibility -= 0.06;
   sourceCredibility = clamp(sourceCredibility, 0, 1);
 
   let evidenceScore = 0.35;
-  // give more weight to strong/formal evidence and reduce penalties for missing explicit sources
   if (hasStrongEvidence) evidenceScore += 0.40;
   if (isCredibleDomain) evidenceScore += 0.18;
   if (hasWeakEvidence) evidenceScore -= 0.10;
@@ -394,7 +390,6 @@ function analyzeContent(rawText, sourceType = 'text') {
   if (hasUnrealisticClaim) claimRealismScore -= 0.38;
   if (hasImpossibility) claimRealismScore -= 0.44;
   if (hasAbsolutistTone) claimRealismScore -= 0.10;
-  // reduce penalty for missing explicit sources when claim cues appear
   if (hasClaimCue && lacksEvidence) claimRealismScore -= 0.08;
   if (questionMarks > 2) claimRealismScore -= 0.03;
   claimRealismScore = clamp(claimRealismScore, 0, 1);
@@ -406,7 +401,6 @@ function analyzeContent(rawText, sourceType = 'text') {
   if (hasStrongEvidence) toneScore -= 0.10;
   toneScore = clamp(toneScore, 0, 1);
 
-  // detect presence of structured/policy-like language to favour REAL
   const hasFormalPolicy = /\b(government announced|officials stated|initiative launched|policy change|policy announced|ministry confirmed|minister said|spokesperson said)\b/i.test(text);
 
   const informationalContent =
@@ -419,7 +413,7 @@ function analyzeContent(rawText, sourceType = 'text') {
   const mlWeight = 0.18;
   const ruleWeight = 0.82;
 
-  let fakeScore =
+  let scoreFromRules =
     (baseFakeProbability * mlWeight) +
     ((1 - sourceCredibility) * 0.26) +
     ((1 - evidenceScore) * 0.20) +
@@ -434,18 +428,15 @@ function analyzeContent(rawText, sourceType = 'text') {
     (isCredibleDomain ? 0.16 : 0) -
     (hasStrongEvidence ? 0.12 : 0);
 
-  // reduce fake score when formal/policy language and neutral tone detected
   if (hasFormalPolicy) {
-    // slightly lower fakeScore to bias toward REAL
-    // (do not override strict impossible/unrealistic rules)
-    fakeScore -= 0.10;
+    scoreFromRules -= 0.10;
   }
 
   if (toneScore <= 0.20 && !hasSensationalLanguage && !hasAbsolutistTone && !hasUnrealisticClaim && !hasImpossibility) {
-    fakeScore -= 0.06;
+    scoreFromRules -= 0.06;
   }
 
-  let fakeProbability = clamp(fakeScore, 0.02, 0.98);
+  let fakeProbability = clamp(scoreFromRules, 0.02, 0.98);
   let realProbability = 1 - fakeProbability;
 
   if (hasImpossibility) {
@@ -483,41 +474,91 @@ function analyzeContent(rawText, sourceType = 'text') {
     realProbability = 1 - fakeProbability;
   }
 
+  // === EXPLICIT SCORING THRESHOLDS ===
+  const realScore = Math.round(realProbability * 100);
+  const fakeScore = Math.round(fakeProbability * 100);
+  
+  // Detect strong signals for override decision-making
+  const strongFakeSignals = hasImpossibility || hasUnrealisticClaim || (hasWeakEvidence && hasClaimCue && !hasStrongEvidence) || (hasMisleadingHeadline && !isCredibleDomain);
+  const strongRealSignals = (isCredibleDomain && hasStrongEvidence) || (hasStrongEvidence && !hasSensationalLanguage && !hasAbsolutistTone) || hasFormalPolicy;
+  
+  // Detect structural/tone patterns that bias toward REAL
+  const isFormalStructured = hasFormalPolicy || (hasStrongEvidence && !hasSensationalLanguage) || (toneScore <= 0.25 && !hasAbsolutistTone);
+  const isNeutralNoExaggeration = toneScore <= 0.30 && !hasUnrealisticClaim && !hasImpossibility && !hasSensationalLanguage;
+  
+  // Detect red flags that strongly bias toward FAKE
+  const hasClearFakeFlags = hasSensationalLanguage && (hasAbsolutistTone || hasUnrealisticClaim || hasImpossibility);
+  
   let label = 'UNCERTAIN';
-  const strongFakeSignals = hasImpossibility || hasUnrealisticClaim || (hasWeakEvidence && hasClaimCue) || (hasMisleadingHeadline && !isCredibleDomain);
-  const strongRealSignals = (isCredibleDomain && hasStrongEvidence) || (hasStrongEvidence && fakeProbability < 0.65);
 
   if (informationalContent) {
     label = 'INFORMATIONAL / NON-NEWS';
-  } else if (hasImpossibility || fakeProbability >= 0.65 || (strongFakeSignals && fakeProbability >= 0.58)) {
-    // Stricter fake detection: keep impossible claims and unrealistic high-confidence fake scores
-    label = 'FAKE NEWS';
-  } else if (hasWeakEvidence && hasClaimCue && fakeProbability >= 0.55) {
-    label = 'FAKE NEWS';
-  } else if (hasUnrealisticClaim && fakeProbability >= 0.60) {
-    label = 'FAKE NEWS';
-  } else if (strongRealSignals) {
-    label = 'REAL';
-  } else if (fakeProbability <= 0.40) {
-    // Default to REAL for low fake probability when no strong fake signals
-    label = 'REAL';
-  } else if (fakeProbability >= 0.40 && fakeProbability <= 0.60 && !strongFakeSignals && !hasAbsolutistTone && !hasSensationalLanguage) {
-    // Bias REAL for middle-range probabilities with no red flags
-    label = 'REAL';
-  } else if (hasSatireCue && !isCredibleDomain) {
-    label = fakeProbability >= 0.52 ? 'FAKE NEWS' : 'REAL';
-  } else if (fakeProbability >= 0.60) {
-    // High fake probability with some signals = FAKE
-    label = 'FAKE NEWS';
-  } else {
-    // Remaining middle ground: bias REAL if no strong fake signals
-    label = !strongFakeSignals ? 'REAL' : 'UNCERTAIN';
+  } 
+  // === FORCED FAKE CLASSIFICATIONS (high confidence) ===
+  else if (hasImpossibility) {
+    label = 'FAKE NEWS';  // Impossible claims always fake
+  } 
+  else if (fakeScore >= 80) {
+    label = 'FAKE NEWS';  // Very high fake probability
+  } 
+  else if (fakeScore >= 65 && (hasSensationalLanguage || hasAbsolutistTone || hasUnrealisticClaim)) {
+    label = 'FAKE NEWS';  // High fake + red flags
+  } 
+  else if (fakeScore >= 60 && strongFakeSignals && !isCredibleDomain) {
+    label = 'FAKE NEWS';  // Moderately high fake + multiple signals
+  }
+  // === FORCED REAL CLASSIFICATIONS (high confidence) ===
+  else if (realScore >= 75) {
+    label = 'REAL';  // Very high real probability
+  } 
+  else if (realScore >= 65 && (isCredibleDomain || hasStrongEvidence || strongRealSignals)) {
+    label = 'REAL';  // High real probability + credibility signals
+  } 
+  else if (realScore >= 60) {
+    label = 'REAL';  // Default to REAL when real score is >= 60
+  }
+  // === THRESHOLD-BASED DECISIONS ===
+  else if (fakeScore >= 60) {
+    label = 'FAKE NEWS';  // Fake score >= 60
+  }
+  // === BIAS TOWARD REAL (structured, neutral, formal) ===
+  else if (isFormalStructured || isNeutralNoExaggeration || hasFormalPolicy) {
+    label = 'REAL';  // Bias REAL for structured/formal/neutral content
+  }
+  // === BIAS TOWARD FAKE (sensational, unrealistic, absolute) ===
+  else if (hasClearFakeFlags) {
+    label = 'FAKE NEWS';  // Multiple red flags = fake
+  }
+  else if (fakeScore >= 50 && (hasSensationalLanguage || hasAbsolutistTone)) {
+    label = 'FAKE NEWS';  // Moderate fake + sensational tone
+  }
+  // === DEFAULT: REAL IF NO STRONG FAKE SIGNALS ===
+  else if (fakeScore <= 45 || !strongFakeSignals) {
+    label = 'REAL';  // Default to REAL when fake score is low or no strong fake signals
+  }
+  // === FALLBACK: ONLY RETURN UNCERTAIN IF TRULY CONFLICTING ===
+  else if (fakeScore >= 40 && fakeScore <= 60 && realScore >= 40 && realScore <= 60) {
+    // Both scores in middle range with conflicting signals
+    if (!strongFakeSignals && !strongRealSignals) {
+      label = 'REAL';  // Prefer REAL when balanced and no strong signals
+    } else {
+      label = 'UNCERTAIN';
+    }
+  }
+  else {
+    label = 'REAL';  // Final fallback to REAL
+  }
+  
+  // Satire override
+  if (hasSatireCue && !isCredibleDomain && label !== 'FAKE NEWS') {
+    label = 'REAL';  // Satire is not fake news, it's intentional
   }
 
   const confidence =
-    label === 'FAKE NEWS' ? fakeProbability :
-    label === 'REAL' ? realProbability :
-    Math.max(fakeProbability, realProbability);
+    label === 'FAKE NEWS' ? (fakeScore / 100) :
+    label === 'REAL' ? (realScore / 100) :
+    label === 'INFORMATIONAL / NON-NEWS' ? 0.85 :
+    Math.max(fakeScore, realScore) / 100;
 
   const risk = fakeProbability >= 0.75 ? 'HIGH' : fakeProbability >= 0.5 ? 'MEDIUM' : 'LOW';
 
@@ -570,7 +611,7 @@ function analyzeContent(rawText, sourceType = 'text') {
             ? 'The content contains satire or parody cues, so it is not treated as a straightforward news claim.'
             : 'The content contains mixed signals, so the system cannot confidently label it.';
 
-  const confidenceBand = fakeProbability >= 0.85 ? '85–95%' : fakeProbability >= 0.7 ? '70–84%' : fakeProbability >= 0.55 ? '55–69%' : 'Below 55%';
+  const confidenceBand = fakeScore >= 85 ? '85–100' : fakeScore >= 70 ? '70–84' : fakeScore >= 55 ? '55–69' : 'Below 55';
 
   const keywordDictionary = {
     sensational: SIGNALS.sensational,
@@ -619,6 +660,8 @@ function analyzeContent(rawText, sourceType = 'text') {
     label,
     realProbability,
     fakeProbability,
+    realScore,
+    fakeScore,
     confidence,
     confidenceBand,
     risk,
