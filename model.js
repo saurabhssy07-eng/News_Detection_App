@@ -63,7 +63,22 @@ const CREDIBLE_DOMAINS = [
   'washingtonpost.com',
   'wsj.com',
   'economist.com',
-  'associatedpress.com'
+  'associatedpress.com',
+  'cnn.com',
+  'npr.org',
+  'abcnews.go.com',
+  'cbsnews.com',
+  'nbcnews.com',
+  'foxnews.com',
+  'theguardian.com',
+  'washingtonexaminer.com',
+  'time.com',
+  'bloomberg.com',
+  'financialtimes.com',
+  'news24.com',
+  'news24.co.za',
+  '24.com',
+  'news.24.com'
 ];
 
 const SATIRE_CUES = [
@@ -86,6 +101,7 @@ const CLAIM_VERB_CUES = [
   'reports that',
   'says that',
   'said that',
+  'according to rumors',
   'viral post',
   'social media post',
   'rumor',
@@ -100,7 +116,13 @@ const CLAIM_VERB_CUES = [
   'no source',
   'experts have not confirmed',
   'has not been confirmed',
-  'has not been verified'
+  'has not been verified',
+  'variously untrue',
+  'untrue',
+  'inaccurate',
+  'likely to provoke',
+  'fear',
+  'fears'
 ];
 
 const SIGNALS = {
@@ -346,14 +368,15 @@ function detectSignals(text) {
   return signals;
 }
 
-function analyzeContent(rawText, sourceType = 'text') {
+function analyzeContent(rawText, sourceType = 'text', options = {}) {
   const text = normalizeWhitespace(rawText);
   const lower = text.toLowerCase();
   const baseFakeProbability = predictProbability(TRAINING_RESULT.model, text);
   const signals = detectSignals(text);
-  const domain = getDomainFromSourceText(text);
+  const domain = normalizeWhitespace(options.sourceDomain || getDomainFromSourceText(options.sourceUrl || text)).toLowerCase().replace(/^www\./, '');
 
   const isCredibleDomain = CREDIBLE_DOMAINS.some((trusted) => domain === trusted || domain.endsWith(`.${trusted}`));
+  const trustedDomainMatch = isCredibleDomain ? CREDIBLE_DOMAINS.find((trusted) => domain === trusted || domain.endsWith(`.${trusted}`)) : '';
   const hasSatireCue = signals.includes('satire');
   const hasSensationalLanguage = signals.includes('sensational');
   const hasWeakEvidence = signals.includes('weakEvidence');
@@ -365,22 +388,28 @@ function analyzeContent(rawText, sourceType = 'text') {
   const hasLoudFormatting = signals.includes('loudFormatting');
 
   const questionMarks = countMatches(text, /\?/g);
-  const uppercaseRatio = text.length ? (text.match(/[A-Z]/g) || []).length / text.length : 0;
+  const wordCount = tokenize(text).length;
   const hasMisleadingHeadline = /^(breaking|shocking|urgent|you won't believe|what happens next|exclusive)\b/i.test(text) || (hasSensationalLanguage && !hasStrongEvidence);
   const evidenceRegex = /\b(according to|reported|confirmed|published|study|data|official|statement|records|interview|spokesperson|research|report|proof|citation|cites|source|sources)\b/i;
   const lacksEvidence = !hasStrongEvidence && (hasWeakEvidence || !evidenceRegex.test(text));
+  const hasFormalTone = /\b(official|officials|government|ministry|agency|court|commission|spokesperson|reporters?|journalists?|confirmed|announced|published|statement|review|debate|meeting|session)\b/i.test(text);
+  const hasStructuredSentences = /[.!?]\s+[A-Z]/.test(text) || (text.split(/[\.\?!]/).filter((part) => normalizeWhitespace(part)).length >= 3);
+  const hasNewsStyleWriting = /\b(today|yesterday|this morning|this week|in the city|in the region|according to|officials said|the report|the article|the statement)\b/i.test(text);
+  const hasLocationsOrOfficials = /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*|city|town|district|state|province|ministry|agency|court|commission|mayor|governor|minister|president|police|hospital|university)\b/.test(text);
+  const hasContradictionLanguage = /\b(untrue|inaccurate|false|misleading|disputed|denied|refuted|unverified|unconfirmed|rumor|rumour|fears?|alarming|provoke|provoke unrest)\b/i.test(text);
+  const hasExaggeration = hasSensationalLanguage || hasAbsolutistTone || hasUnrealisticClaim || hasImpossibility || hasLoudFormatting;
 
   let sourceCredibility = 0.35;
-  if (isCredibleDomain) sourceCredibility += 0.42;
-  if (sourceType === 'url') sourceCredibility += 0.04;
+  if (isCredibleDomain) sourceCredibility += 0.58;
+  if (sourceType === 'url') sourceCredibility += 0.06;
   if (sourceType === 'pdf') sourceCredibility += 0.02;
-  if (hasStrongEvidence) sourceCredibility += 0.22;
+  if (hasStrongEvidence) sourceCredibility += 0.18;
   if (hasWeakEvidence) sourceCredibility -= 0.06;
   sourceCredibility = clamp(sourceCredibility, 0, 1);
 
   let evidenceScore = 0.35;
   if (hasStrongEvidence) evidenceScore += 0.40;
-  if (isCredibleDomain) evidenceScore += 0.18;
+  if (isCredibleDomain) evidenceScore += 0.32;
   if (hasWeakEvidence) evidenceScore -= 0.10;
   if (lacksEvidence) evidenceScore -= 0.10;
   if (hasSatireCue) evidenceScore -= 0.08;
@@ -410,31 +439,37 @@ function analyzeContent(rawText, sourceType = 'text') {
     !hasMisleadingHeadline &&
     !hasSensationalLanguage;
 
-  const mlWeight = 0.18;
-  const ruleWeight = 0.82;
+  const mlWeight = 0.10;
 
   let scoreFromRules =
     (baseFakeProbability * mlWeight) +
-    ((1 - sourceCredibility) * 0.26) +
-    ((1 - evidenceScore) * 0.20) +
-    ((1 - claimRealismScore) * 0.24) +
-    (toneScore * 0.08) +
-    (hasWeakEvidence ? 0.08 : 0) +
-    (hasClaimCue && lacksEvidence ? 0.08 : 0) +
-    (hasMisleadingHeadline ? 0.10 : 0) +
-    (hasImpossibility ? 0.18 : 0) +
-    (hasUnrealisticClaim ? 0.14 : 0) +
-    (hasSatireCue ? 0.06 : 0) -
-    (isCredibleDomain ? 0.16 : 0) -
-    (hasStrongEvidence ? 0.12 : 0);
+    ((1 - sourceCredibility) * 0.16) +
+    ((1 - evidenceScore) * 0.12) +
+    ((1 - claimRealismScore) * 0.18) +
+    (toneScore * 0.05) +
+    (hasWeakEvidence ? 0.07 : 0) +
+    (hasClaimCue && lacksEvidence ? 0.10 : 0) +
+    (hasContradictionLanguage && lacksEvidence ? 0.12 : 0) +
+    (hasMisleadingHeadline ? 0.08 : 0) +
+    (hasImpossibility ? 0.22 : 0) +
+    (hasUnrealisticClaim ? 0.18 : 0) +
+    (hasSatireCue ? 0.05 : 0) -
+    (isCredibleDomain ? 0.28 : 0) -
+    (hasStrongEvidence ? 0.14 : 0) -
+    (hasFormalTone ? 0.04 : 0) -
+    (hasStructuredSentences ? 0.05 : 0) -
+    (hasNewsStyleWriting ? 0.05 : 0) -
+    (hasLocationsOrOfficials ? 0.04 : 0) -
+    (hasFormalPolicy ? 0.08 : 0) -
+    (wordCount > 120 && !hasExaggeration ? 0.04 : 0);
 
-  if (hasFormalPolicy) {
-    scoreFromRules -= 0.10;
-  }
-
-  if (toneScore <= 0.20 && !hasSensationalLanguage && !hasAbsolutistTone && !hasUnrealisticClaim && !hasImpossibility) {
-    scoreFromRules -= 0.06;
-  }
+  if (hasFormalPolicy) scoreFromRules -= 0.08;
+  if (toneScore <= 0.20 && !hasSensationalLanguage && !hasAbsolutistTone && !hasUnrealisticClaim && !hasImpossibility) scoreFromRules -= 0.06;
+  if (hasFormalTone) scoreFromRules -= 0.05;
+  if (hasStructuredSentences) scoreFromRules -= 0.04;
+  if (hasNewsStyleWriting) scoreFromRules -= 0.04;
+  if (hasLocationsOrOfficials) scoreFromRules -= 0.04;
+  if (wordCount > 300 && !hasExaggeration) scoreFromRules -= 0.08;
 
   let fakeProbability = clamp(scoreFromRules, 0.02, 0.98);
   let realProbability = 1 - fakeProbability;
@@ -454,8 +489,8 @@ function analyzeContent(rawText, sourceType = 'text') {
     realProbability = 1 - fakeProbability;
   }
 
-  if (hasClaimCue && lacksEvidence && !hasStrongEvidence) {
-    fakeProbability = clamp(Math.max(fakeProbability, 0.74), 0.02, 0.98);
+  if ((hasClaimCue || hasContradictionLanguage) && lacksEvidence && !hasStrongEvidence) {
+    fakeProbability = clamp(Math.max(fakeProbability, 0.78), 0.02, 0.98);
     realProbability = 1 - fakeProbability;
   }
 
@@ -464,8 +499,8 @@ function analyzeContent(rawText, sourceType = 'text') {
     realProbability = 1 - fakeProbability;
   }
 
-  if (isCredibleDomain && hasStrongEvidence && !hasImpossibility && !hasUnrealisticClaim) {
-    fakeProbability = clamp(fakeProbability - 0.28, 0.02, 0.92);
+  if (isCredibleDomain && !hasImpossibility && !hasUnrealisticClaim && !hasSatireCue) {
+    fakeProbability = clamp(fakeProbability - 0.44, 0.02, 0.88);
     realProbability = 1 - fakeProbability;
   }
 
@@ -474,84 +509,70 @@ function analyzeContent(rawText, sourceType = 'text') {
     realProbability = 1 - fakeProbability;
   }
 
-  // === EXPLICIT SCORING THRESHOLDS ===
   const realScore = Math.round(realProbability * 100);
   const fakeScore = Math.round(fakeProbability * 100);
-  
-  // Detect strong signals for override decision-making
+
   const strongFakeSignals = hasImpossibility || hasUnrealisticClaim || (hasWeakEvidence && hasClaimCue && !hasStrongEvidence) || (hasMisleadingHeadline && !isCredibleDomain);
-  const strongRealSignals = (isCredibleDomain && hasStrongEvidence) || (hasStrongEvidence && !hasSensationalLanguage && !hasAbsolutistTone) || hasFormalPolicy;
-  
-  // Detect structural/tone patterns that bias toward REAL
-  const isFormalStructured = hasFormalPolicy || (hasStrongEvidence && !hasSensationalLanguage) || (toneScore <= 0.25 && !hasAbsolutistTone);
-  const isNeutralNoExaggeration = toneScore <= 0.30 && !hasUnrealisticClaim && !hasImpossibility && !hasSensationalLanguage;
-  
-  // Detect red flags that strongly bias toward FAKE
-  const hasClearFakeFlags = hasSensationalLanguage && (hasAbsolutistTone || hasUnrealisticClaim || hasImpossibility);
-  
-  let label = 'UNCERTAIN';
+  const strongRealSignals =
+    (isCredibleDomain && (hasStrongEvidence || hasFormalTone || hasNewsStyleWriting || hasFormalPolicy)) ||
+    (hasStrongEvidence && !hasSensationalLanguage && !hasAbsolutistTone) ||
+    hasFormalPolicy ||
+    hasFormalTone ||
+    hasStructuredSentences ||
+    hasNewsStyleWriting ||
+    hasLocationsOrOfficials ||
+    (wordCount > 180 && !hasExaggeration);
+
+  const borderlineArticle =
+    !isCredibleDomain &&
+    !hasStrongEvidence &&
+    !hasImpossibility &&
+    !hasUnrealisticClaim &&
+    !hasSatireCue &&
+    fakeScore >= 40 &&
+    fakeScore <= 65 &&
+    realScore >= 35 &&
+    realScore <= 60 &&
+    wordCount >= 80;
+
+  let label = 'REAL';
 
   if (informationalContent) {
     label = 'INFORMATIONAL / NON-NEWS';
-  } 
-  // === FORCED FAKE CLASSIFICATIONS (high confidence) ===
-  else if (hasImpossibility) {
-    label = 'FAKE NEWS';  // Impossible claims always fake
-  } 
-  else if (fakeScore >= 80) {
-    label = 'FAKE NEWS';  // Very high fake probability
-  } 
-  else if (fakeScore >= 65 && (hasSensationalLanguage || hasAbsolutistTone || hasUnrealisticClaim)) {
-    label = 'FAKE NEWS';  // High fake + red flags
-  } 
-  else if (fakeScore >= 60 && strongFakeSignals && !isCredibleDomain) {
-    label = 'FAKE NEWS';  // Moderately high fake + multiple signals
+  } else if (hasImpossibility) {
+    label = 'FAKE NEWS';
+  } else if (fakeScore >= 75 && !strongRealSignals) {
+    label = 'FAKE NEWS';
+  } else if (fakeScore >= 68 && (hasSensationalLanguage || hasAbsolutistTone || hasUnrealisticClaim)) {
+    label = 'FAKE NEWS';
+  } else if (fakeScore >= 62 && (hasContradictionLanguage || hasWeakEvidence || hasClaimCue) && !strongRealSignals && !isCredibleDomain) {
+    label = 'FAKE NEWS';
+  } else if (fakeScore >= 64 && strongFakeSignals && !strongRealSignals && !isCredibleDomain) {
+    label = 'FAKE NEWS';
+  } else if (fakeScore >= 60 && !strongRealSignals) {
+    label = 'UNCERTAIN';
+  } else if (borderlineArticle || (fakeScore >= 45 && fakeScore <= 55 && realScore >= 45 && realScore <= 55)) {
+    label = strongRealSignals || isCredibleDomain ? 'REAL' : 'UNCERTAIN';
+  } else if (isCredibleDomain || hasStrongEvidence || strongRealSignals || fakeScore < 60) {
+    label = 'REAL';
+  } else {
+    label = 'UNCERTAIN';
   }
-  // === FORCED REAL CLASSIFICATIONS (high confidence) ===
-  else if (realScore >= 75) {
-    label = 'REAL';  // Very high real probability
-  } 
-  else if (realScore >= 65 && (isCredibleDomain || hasStrongEvidence || strongRealSignals)) {
-    label = 'REAL';  // High real probability + credibility signals
-  } 
-  else if (realScore >= 60) {
-    label = 'REAL';  // Default to REAL when real score is >= 60
+
+  if (label !== 'FAKE NEWS' && fakeScore >= 70 && !strongRealSignals) {
+    label = 'FAKE NEWS';
   }
-  // === THRESHOLD-BASED DECISIONS ===
-  else if (fakeScore >= 60) {
-    label = 'FAKE NEWS';  // Fake score >= 60
+
+  if (label !== 'FAKE NEWS' && (hasContradictionLanguage || (hasClaimCue && lacksEvidence)) && !isCredibleDomain && fakeScore >= 55) {
+    label = 'UNCERTAIN';
   }
-  // === BIAS TOWARD REAL (structured, neutral, formal) ===
-  else if (isFormalStructured || isNeutralNoExaggeration || hasFormalPolicy) {
-    label = 'REAL';  // Bias REAL for structured/formal/neutral content
+
+  if (label === 'UNCERTAIN' && fakeScore >= 70 && !isCredibleDomain) {
+    label = 'FAKE NEWS';
   }
-  // === BIAS TOWARD FAKE (sensational, unrealistic, absolute) ===
-  else if (hasClearFakeFlags) {
-    label = 'FAKE NEWS';  // Multiple red flags = fake
-  }
-  else if (fakeScore >= 50 && (hasSensationalLanguage || hasAbsolutistTone)) {
-    label = 'FAKE NEWS';  // Moderate fake + sensational tone
-  }
-  // === DEFAULT: REAL IF NO STRONG FAKE SIGNALS ===
-  else if (fakeScore <= 45 || !strongFakeSignals) {
-    label = 'REAL';  // Default to REAL when fake score is low or no strong fake signals
-  }
-  // === FALLBACK: ONLY RETURN UNCERTAIN IF TRULY CONFLICTING ===
-  else if (fakeScore >= 40 && fakeScore <= 60 && realScore >= 40 && realScore <= 60) {
-    // Both scores in middle range with conflicting signals
-    if (!strongFakeSignals && !strongRealSignals) {
-      label = 'REAL';  // Prefer REAL when balanced and no strong signals
-    } else {
-      label = 'UNCERTAIN';
-    }
-  }
-  else {
-    label = 'REAL';  // Final fallback to REAL
-  }
-  
-  // Satire override
-  if (hasSatireCue && !isCredibleDomain && label !== 'FAKE NEWS') {
-    label = 'REAL';  // Satire is not fake news, it's intentional
+
+  if (label === 'UNCERTAIN' && (isCredibleDomain || hasStrongEvidence || strongRealSignals) && fakeScore < 70) {
+    label = 'REAL';
   }
 
   const confidence =
@@ -568,6 +589,7 @@ function analyzeContent(rawText, sourceType = 'text') {
   };
 
   addReason(informationalContent, 'ℹ️ Informational or explanatory content, not a direct news claim');
+  addReason(false, '⚠️ Content is too short to classify as informational or complete article content');
   addReason(hasSatireCue, '⚠️ Satire or parody cue detected');
   addReason(hasImpossibility, '❌ Contains a scientifically impossible claim');
   addReason(hasUnrealisticClaim, '❌ Makes an unrealistic scientific or commercial claim');
@@ -579,7 +601,7 @@ function analyzeContent(rawText, sourceType = 'text') {
   addReason(hasSensationalLanguage, '⚠️ Uses sensational or clickbait language');
   addReason(hasLoudFormatting, '⚠️ Uses loud punctuation or all-caps emphasis');
 
-  if (isCredibleDomain) reasons.push('✅ Credible source domain detected');
+  if (isCredibleDomain) reasons.push(`✅ Trusted source domain detected (${trustedDomainMatch || domain})`);
   if (hasStrongEvidence) reasons.push('✅ Contains verifiable references or evidence');
 
   if (!reasons.length) {
@@ -588,11 +610,11 @@ function analyzeContent(rawText, sourceType = 'text') {
 
   const trustScore = Math.round(
     clamp(
-      (sourceCredibility * 34) +
+      (sourceCredibility * 36) +
       (evidenceScore * 28) +
-      (claimRealismScore * 22) +
+      (claimRealismScore * 18) +
       ((1 - toneScore) * 8) +
-      ((1 - fakeProbability) * 8),
+      ((1 - fakeProbability) * 10),
       0,
       100
     )
@@ -603,7 +625,7 @@ function analyzeContent(rawText, sourceType = 'text') {
       ? 'The article contains weak evidence, claim cues, or unrealistic claims that outweigh neutral tone.'
       : label === 'REAL'
         ? isCredibleDomain
-          ? 'A credible source domain and supporting evidence outweigh weak misinformation signals.'
+          ? 'A trusted source domain and supporting evidence strongly outweigh weak misinformation signals.'
           : 'The article has enough evidence cues and low misinformation risk to be treated as real.'
         : label === 'INFORMATIONAL / NON-NEWS'
           ? 'The content is informational rather than a news claim.'
@@ -638,12 +660,13 @@ function analyzeContent(rawText, sourceType = 'text') {
     confusionMatrix: TRAINING_RESULT.evaluation.matrix,
     scoringWeights: {
       mlWeight,
-      ruleWeight,
+      ruleWeight: 0.90,
       sourceCredibility: Number(sourceCredibility.toFixed(2)),
       evidence: Number(evidenceScore.toFixed(2)),
       claimRealism: Number(claimRealismScore.toFixed(2)),
       tone: Number(toneScore.toFixed(2)),
-      fakeProbability: Number(fakeProbability.toFixed(2))
+      fakeProbability: Number(fakeProbability.toFixed(2)),
+      trustedDomain: isCredibleDomain ? 1 : 0
     },
     featureEngineering: [
       'sensational language',

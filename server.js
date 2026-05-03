@@ -8,6 +8,7 @@ const { analyzeContent } = require('./model');
 
 const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
+const analysisCache = new Map();
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -64,29 +65,38 @@ function extractMainContent(html) {
   const $ = cheerio.load(String(html || ''), { decodeEntities: true });
 
   $('script, style, noscript, svg, iframe, form, nav, header, footer, aside, menu, button, input, select, textarea').remove();
+  $('script, style, nav, header, footer, aside, .advert, .ad, .promo').remove();
   $('[class*="ad"], [id*="ad"], [class*="advert"], [id*="advert"], [class*="promo"], [id*="promo"], [class*="newsletter"], [id*="newsletter"]').remove();
 
-  const candidates = [];
-  const selectors = ['article', 'main', '[role="main"]', 'section[class*="content"]', 'div[class*="content"]', 'div[class*="article"]', 'div[class*="post"]', 'div[class*="story"]'];
+  const selectors = [
+    'article p',
+    '.ins_storybody p',
+    '.sp__content p',
+    '.story__content p',
+    '.article-content p',
+    'article',
+    'main',
+    '[role="main"]',
+    'section[class*="content"]',
+    'div[class*="content"]',
+    'div[class*="article"]',
+    'div[class*="post"]',
+    'div[class*="story"]'
+  ];
 
   for (const selector of selectors) {
-    $(selector).each((_, element) => {
-      const text = normalizeWhitespace($(element).text());
-      if (text && !isNoiseText(text)) {
-        candidates.push(text);
-      }
-    });
-  }
+    const chunks = $(selector)
+      .map((_, element) => normalizeWhitespace($(element).text()))
+      .get()
+      .filter((text) => text && !isNoiseText(text));
 
-  if (!candidates.length) {
-    const bodyText = normalizeWhitespace($('body').text());
-    if (bodyText && !isNoiseText(bodyText)) {
-      candidates.push(bodyText);
+    if (chunks.length > 5) {
+      return removeEmptyLines(decodeHtmlEntities(chunks.join(' ')));
     }
   }
 
-  const text = candidates.sort((a, b) => b.length - a.length)[0] || '';
-  return removeEmptyLines(decodeHtmlEntities(text));
+  const fallbackText = normalizeWhitespace($('body').text());
+  return removeEmptyLines(decodeHtmlEntities(fallbackText && !isNoiseText(fallbackText) ? fallbackText : ''));
 }
 
 function unwrapRedirectUrl(input) {
@@ -191,6 +201,14 @@ function extractMetaDescription(html) {
     source.match(/<meta[^>]+property=["']og:description["'][^>]*content=["']([^"']+)["'][^>]*>/i) ||
     source.match(/<meta[^>]+content=["']([^"']+)["'][^>]*property=["']og:description["'][^>]*>/i);
   return metaMatch ? normalizeWhitespace(decodeHtmlEntities(stripHtmlTags(metaMatch[1]))) : '';
+}
+
+function getHostnameFromUrl(targetUrl) {
+  try {
+    return new URL(unwrapRedirectUrl(targetUrl)).hostname.toLowerCase().replace(/^www\./, '');
+  } catch (error) {
+    return '';
+  }
 }
 
 async function fetchArticleText(targetUrl) {
@@ -339,10 +357,12 @@ const server = http.createServer(async (req, res) => {
 
       const sourceType = payload.sourceType === 'url' || payload.sourceType === 'pdf' ? payload.sourceType : 'text';
       let content = normalizeWhitespace(payload.content || payload.text || payload.article || '');
+      let normalizedTargetUrl = '';
+      let sourceDomain = '';
 
       if (sourceType === 'url') {
         const targetUrl = normalizeWhitespace(payload.url || payload.content || payload.text || payload.article || '');
-        const normalizedTargetUrl = unwrapRedirectUrl(targetUrl);
+        normalizedTargetUrl = unwrapRedirectUrl(targetUrl);
 
         if (!normalizedTargetUrl) {
           sendJson(res, 400, { error: 'Please enter a direct article URL or a redirect link that resolves to one' });
@@ -353,6 +373,8 @@ const server = http.createServer(async (req, res) => {
           sendJson(res, 400, { error: 'Please enter a valid http(s) news article URL.' });
           return;
         }
+
+        sourceDomain = getHostnameFromUrl(normalizedTargetUrl);
 
         try {
           content = await fetchArticleText(normalizedTargetUrl);
@@ -365,18 +387,37 @@ const server = http.createServer(async (req, res) => {
           });
           return;
         }
+
+        const MIN_LEN = 300;
+        if (!content || content.length < MIN_LEN) {
+          sendJson(res, 422, {
+            ok: false,
+            status: 'EXTRACTION_FAILED',
+            message: 'Unable to extract full article content. Try a direct article link or paste text.'
+          });
+          return;
+        }
       }
 
       if (content.length < 20) {
-        // Return 200 with ok:false so client can inspect the error payload
-        // (tests expect a JSON response rather than an HTTP error)
         sendJson(res, 200, { ok: false, error: 'Please provide at least 20 characters of content.' });
         return;
       }
 
       let result;
       try {
-        result = analyzeContent(content, sourceType);
+        const cacheKey = sourceType === 'url' ? `url:${normalizedTargetUrl}` : '';
+        if (cacheKey && analysisCache.has(cacheKey)) {
+          result = analysisCache.get(cacheKey);
+        } else {
+          result = analyzeContent(content, sourceType, {
+            sourceUrl: sourceType === 'url' ? normalizedTargetUrl : '',
+            sourceDomain: sourceType === 'url' ? sourceDomain : ''
+          });
+          if (cacheKey) {
+            analysisCache.set(cacheKey, result);
+          }
+        }
       } catch (analysisError) {
         sendJson(res, 500, {
           ok: false,
