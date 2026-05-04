@@ -1,33 +1,28 @@
-# News Detection App
+# 📰 AI Fake News Detection App
 
-Small local project that analyzes news-like text for factual/quality signals.
+## 📌 Project Description
+This is an AI-based web application that detects whether a news article is real or fake using machine learning techniques.
 
-## Tests
+## 🚀 Features
+- Detect fake news using AI model
+- User-friendly interface
+- Fast prediction system
+- Supports news text input
 
-- Location: `tests/test_analyze.js` — a small Node.js script that sends HTTP POST requests to `/api/analyze`.
-- Scenarios included: real news, fake-news style content, informational content, and an edge case (empty input).
+## 🛠️ Technologies Used
+- Python / Node.js (update based on your project)
+- Machine Learning
+- HTML, CSS, JavaScript
 
-How to run the tests
-
+## ▶️ How to Run
 1. Install dependencies:
+   npm install
 
-```bash
-npm install
-```
+2. Start the server:
+   npm start
 
-2. Start the server (in one terminal):
+3. Open browser:
+   http://localhost:3000
 
-```bash
-npm start
-```
-
-3. Run the API tests (in another terminal):
-
-```bash
-npm run test:api
-```
-
-Notes
-
-- The test script expects the server to be reachable at `localhost` on the port specified by the `PORT` environment variable (default `3000`).
-- The test script exits with code `0` on success and non-zero on failure; check output for failing case details.
+## 👨‍💻 Author
+Saurabh Singh Yadav
