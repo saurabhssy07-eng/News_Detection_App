@@ -10,7 +10,7 @@ This is an AI-based web application that detects whether a news article is real 
 - Supports news text input
 
 ## 🛠️ Technologies Used
-- Python / Node.js (update based on your project)
+- Node.js
 - Machine Learning
 - HTML, CSS, JavaScript
 
