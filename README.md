@@ -1,5 +1,9 @@
 # 📰 AI Fake News Detection App
 
+## 🌐 Live Demo
+https://news-detection-app-gsan.onrender.com
+
+
 ## 📌 Project Description
 This is an AI-based web application that detects whether a news article is real or fake using machine learning techniques.
 
