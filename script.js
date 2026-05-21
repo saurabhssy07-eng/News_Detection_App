@@ -3,12 +3,21 @@ const state = {
   themeKey: "newsguard_theme_v1",
   apiBase: (() => {
     const origin = window.location.origin || "";
-    const isLocalhost = /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/i.test(origin);
-    if (isLocalhost) {
+    const isLocalHttp = /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/i.test(origin);
+
+    // Local dev: if frontend isn't on 3000, assume backend is on 3000
+    if (isLocalHttp) {
       const currentPort = new URL(origin).port;
       return currentPort === "3000" ? origin.replace(/\/$/, "") : "http://localhost:3000";
     }
-    return "http://localhost:3000";
+
+    // Production/staging: default to same-origin (avoids CORS)
+    const apiFromMeta = document.querySelector('meta[name="api-base"]')?.content?.trim();
+    if (apiFromMeta) {
+      return apiFromMeta.replace(/\/$/, "");
+    }
+
+    return origin.replace(/\/$/, "");
   })()
 };
 
@@ -716,30 +725,64 @@ async function analyzePayload(rawText, sourceType) {
   showLoader("Analyzing content");
   await animateLoader();
 
+  const apiUrls = [];
+  if (state.apiBase) {
+    apiUrls.push(state.apiBase);
+  }
+  if (!apiUrls.includes("http://localhost:3000")) {
+    apiUrls.push("http://localhost:3000");
+  }
+
   try {
-    const response = await fetch(`${state.apiBase}/api/analyze`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: prepared, sourceType })
-    });
+    let lastError = null;
 
-    const data = await response.json();
+    for (const baseUrl of apiUrls) {
+      try {
+        const response = await fetch(`${baseUrl}/api/analyze`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: prepared, sourceType })
+        });
 
-    if (!response.ok || !data.ok) {
-      throw new Error(data.error || "Analysis failed.");
+        const contentType = response.headers.get("content-type") || "";
+        const responseText = await response.text();
+
+        if (!/application\/json/i.test(contentType)) {
+          lastError = new Error(`Unexpected response from API at ${baseUrl}.`);
+          continue;
+        }
+
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          lastError = new Error("The server returned invalid JSON.");
+          continue;
+        }
+
+        if (!response.ok || !data.ok) {
+          lastError = new Error(data.error || "Analysis failed.");
+          continue;
+        }
+
+        const result = data.result;
+        renderAnalysis(result);
+        saveHistory({
+          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          time: new Date().toLocaleString(),
+          sourceType,
+          label: result.label,
+          sentiment: result.sentiment,
+          summary: result.summary,
+          analysis: result
+        });
+        return;
+      } catch (requestError) {
+        lastError = requestError;
+      }
     }
 
-    const result = data.result;
-    renderAnalysis(result);
-    saveHistory({
-      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      time: new Date().toLocaleString(),
-      sourceType,
-      label: result.label,
-      sentiment: result.sentiment,
-      summary: result.summary,
-      analysis: result
-    });
+    throw lastError || new Error("Analysis failed.");
   } catch (error) {
     showError(error.message || "Analysis failed.");
   } finally {
